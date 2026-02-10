@@ -2,6 +2,8 @@ const express = require('express')
 const mongoose = require('mongoose')
 const userrouter = require('./controllers/user_cnt');
 const errorhandler = require('./middlewares/errorhandler');
+const ticketrouter = require('./controllers/ticket_cnt');
+const authmiddleware = require('./middlewares/authmiddleware');
 const app = express()
 
 if(mongoose.connect(process.env.MONGO_URI)){
@@ -15,6 +17,7 @@ app.get('/',(req,res)=>{
   res.send("welcome to the customer support backend")
 })
 app.use('/api/user',userrouter)
+app.use('/api/ticket',authmiddleware,ticketrouter)
 app.use(errorhandler)
 
 module.exports = app

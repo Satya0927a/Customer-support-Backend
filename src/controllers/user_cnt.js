@@ -77,7 +77,7 @@ userrouter.post('/login',userinputvalidate,async(req,res,next)=>{
   const payload = {
     userid:user._id
   }
-  const token = jwt.sign(payload,process.env.SECRET)
+  const token = jwt.sign(payload,process.env.SECRET,{expiresIn:'40m'})
   res.send({
     success:true,
     message:"logged in successfully",

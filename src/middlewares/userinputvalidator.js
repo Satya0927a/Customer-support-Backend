@@ -2,7 +2,7 @@ const isValidEmail = require("../utils/functions/emailvalidate")
 
 const userinputvalidate = (req, res, next) => {
   try {
-    const { name, email, password ,context,related} = req.body
+    const { name, email, password ,context,related,role} = req.body
     if (name && name.length < 3) {
       return res.status(403).send({
         success: false,
@@ -31,6 +31,12 @@ const userinputvalidate = (req, res, next) => {
       return res.status(400).send({
         success: false,
         message: "the value of the related field should be among ['payment','account','service','other']"
+      })
+    }
+    if(role && !['user','admin','agent'].includes(role)){
+      return res.status(400).send({
+        success:false,
+        message:"the value of role should be among ['user','admin','agent']"
       })
     }
     next()

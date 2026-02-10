@@ -20,7 +20,8 @@ const authmiddleware = async(req,res,next)=>{
       })
     }
     req.user = {
-      userid:payload.userid
+      userid:payload.userid,
+      role:usercheck.role
     }
     next()
   } catch (error) {

@@ -12,11 +12,12 @@ ticketrouter.get('/all', async (req, res, next) => {
     next(error)
   }
 })
+//?to get all ticket raised by the user
 ticketrouter.get('/', async (req, res, next) => {
   try {
     const userid = req.user.userid
-    const usertickets = await ticketmodel.find({ raisedBy: userid }).select('-__v -raisedBy')
-    if (!usertickets) {
+    const usertickets = await ticketmodel.find({ raisedBy: userid }).select('-__v -raisedBy -comments -agentHistory -agentIncharge -user_satisfaction')
+    if (usertickets.length == 0) {
       return res.send({
         success: true,
         message: "No tickets are raised by you"
@@ -31,6 +32,27 @@ ticketrouter.get('/', async (req, res, next) => {
     next(error)
   }
 })
+//? right now user can only fetch data for their raised token in this route
+ticketrouter.get('/:ticketid',async(req,res,next)=>{
+  try {
+    const ticketid = req.params.ticketid
+    let ticket = await ticketmodel.findById(ticketid)
+    if(ticket.raisedBy != req.user.userid){
+      return res.status(404).send({
+        success:false,
+        message:"ticket not found" //a lie
+      })
+    }
+    res.send({
+      success:true,
+      message:"fetched the ticket",
+      ticket:ticket
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+//?creating a ticket
 ticketrouter.post('/', userinputvalidate, async (req, res, next) => {
   try {
     const { context, related } = req.body
@@ -38,6 +60,13 @@ ticketrouter.post('/', userinputvalidate, async (req, res, next) => {
       return res.status(400).send({
         success: false,
         message: "Invalid inputs"
+      })
+    }
+    const pendingticket = await ticketmodel.find({raisedBy:req.user.userid,status:"pending"})
+    if(pendingticket.length >= 2){
+      return res.status(403).send({
+        success:false,
+        message:"you already have 2 pending tickets you cannot create more without cancelling one"
       })
     }
   
@@ -51,8 +80,40 @@ ticketrouter.post('/', userinputvalidate, async (req, res, next) => {
         context: newticket.context,
         related: newticket.related,
         status: newticket.status,
-        comments: newticket.comments
+        createdAt:newticket.createdAt,
       }
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+//?for cancelling a ticket 
+ticketrouter.patch('/cancel/:ticketId',async(req,res,next)=>{
+  try {
+    const ticketId = req.params.ticketId
+    const ticket = await ticketmodel.findById(ticketId)
+    if(!ticket){
+      return res.status(404).send({
+        success:false,
+        message:"Ticket not found"
+      })
+    }
+    if(ticket.raisedBy != req.user.userid){
+      return res.status(404).send({
+        success:false,
+        message:"Ticket not found" //lie
+      })
+    }
+    if(ticket.status == "resolved" || ticket.status == "cancelled"){
+      return res.status(400).send({
+        success:false,
+        message:"Bad request"
+      })
+    }
+    await ticketmodel.findByIdAndUpdate(ticketId,{"status":"cancelled"})
+    res.send({
+      success:true,
+      message:"Cancelled the ticket"
     })
   } catch (error) {
     next(error)

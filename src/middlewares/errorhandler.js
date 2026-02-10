@@ -13,6 +13,12 @@ const errorhandler = (err,req,res,next)=>{
       message:"Session expired login again"
     })
   }
+  else if(err.name == "CastError"){
+    return res.status(400).send({
+      success:false,
+      message:"Invalid ObjectId provided"
+    })
+  }
   else{
     res.status(500).send({
       success:false,

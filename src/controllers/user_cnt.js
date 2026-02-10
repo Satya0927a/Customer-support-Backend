@@ -1,3 +1,4 @@
+const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
 const userinputvalidate = require('../middlewares/userinputvalidator')
 const usermodel = require('../models/usermodel')
@@ -35,7 +36,6 @@ userrouter.post('/register',userinputvalidate,async(req,res,next)=>{
       success:true,
       message:"successfully created the account",
       userdata:{
-        _id:newuser._id,
         name:newuser.name,
         email:newuser.email,
         role:newuser.role,
@@ -45,6 +45,50 @@ userrouter.post('/register',userinputvalidate,async(req,res,next)=>{
   } catch (error) {
     next(error)
   }
+})
+userrouter.post('/login',userinputvalidate,async(req,res,next)=>{
+  const {email,password} = req.body
+  if(!email || !password){
+    return res.status(400).send({
+      success:false,
+      message:"Invalid inputs"
+    })
+  }
+  const user = await usermodel.findOne({email:email})
+  if(!user){
+    return res.status(404).send({
+      success:false,
+      message:"Invalid credentials"
+    })
+  }
+  if(!user.active){
+    return res.status(403).send({
+      success:false,
+      message:"Your account is deactive"
+    })
+  }
+  const passverify = await bcrypt.compare(password,user.passwordHash)
+  if(!passverify){
+    return res.status(404).send({
+      success:false,
+      message:"Invalid credentials"
+    })
+  }
+  const payload = {
+    userid:user._id
+  }
+  const token = jwt.sign(payload,process.env.SECRET)
+  res.send({
+    success:true,
+    message:"logged in successfully",
+    userdata:{
+      name:user.name,
+      email:user.email,
+      role:user.role,
+      token:token
+    }
+  })
+
 })
 
 module.exports = userrouter

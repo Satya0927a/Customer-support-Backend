@@ -6,6 +6,8 @@ const adminrouter = require('./controllers/admin_cnt');
 const adminmiddleware = require('./middlewares/adminmiddleware');
 const authrouter = require('./controllers/auth_cnt');
 const userrouter = require('./controllers/user_cnt');
+const agentmiddleware = require('./middlewares/agentmiddleware');
+const agentrouter = require('./controllers/agent_cnt');
 const app = express()
 
 if(mongoose.connect(process.env.MONGO_URI)){
@@ -21,6 +23,7 @@ app.get('/',(req,res)=>{
 app.use('/api/auth',authrouter)
 app.use('/api/user',authmiddleware,userrouter)
 app.use('/api/admin',authmiddleware,adminmiddleware,adminrouter)
+app.use('/api/agent',authmiddleware,agentmiddleware,agentrouter)
 app.use(errorhandler)
 
 module.exports = app

@@ -1,4 +1,5 @@
 const userinputvalidate = require('../middlewares/userinputvalidator')
+const commentmodel = require('../models/commentmodel')
 const ticketmodel = require('../models/ticketmodel')
 
 const userrouter = require('express').Router()
@@ -24,20 +25,20 @@ userrouter.get('/ticket', async (req, res, next) => {
   }
 })
 //? right now user can only fetch data for their raised token in this route
-userrouter.get('/ticket/:ticketid',async(req,res,next)=>{
+userrouter.get('/ticket/:ticketid', async (req, res, next) => {
   try {
     const ticketid = req.params.ticketid
-    let ticket = await ticketmodel.findById(ticketid).populate([{path:"agentIncharge agentHistory",select:"name -_id"},{path:"comments",select:"comment"}]).select('-__v')
-    if(ticket.raisedBy != req.user.userid){
+    let ticket = await ticketmodel.findById(ticketid).populate([{ path: "agentIncharge agentHistory", select: "name -_id" }, { path: "comments", select: "comment" }]).select('-__v')
+    if (ticket.raisedBy != req.user.userid) {
       return res.status(404).send({
-        success:false,
-        message:"ticket not found" //a lie
+        success: false,
+        message: "ticket not found" //a lie
       })
     }
     res.send({
-      success:true,
-      message:"fetched the ticket",
-      ticket:ticket
+      success: true,
+      message: "fetched the ticket",
+      ticket: ticket
     })
   } catch (error) {
     next(error)
@@ -53,14 +54,14 @@ userrouter.post('/ticket', userinputvalidate, async (req, res, next) => {
         message: "Invalid inputs"
       })
     }
-    const pendingticket = await ticketmodel.find({raisedBy:req.user.userid,status:"pending"})
-    if(pendingticket.length >= 2){
+    const pendingticket = await ticketmodel.find({ raisedBy: req.user.userid, status: "pending" })
+    if (pendingticket.length >= 2) {
       return res.status(403).send({
-        success:false,
-        message:"you already have 2 pending tickets you cannot create more without cancelling one"
+        success: false,
+        message: "you already have 2 pending tickets you cannot create more without cancelling one"
       })
     }
-  
+
     const newticket = new ticketmodel({ raisedBy: req.user.userid, context: context, related: related })
     await newticket.save()
     res.status(201).send({
@@ -71,7 +72,7 @@ userrouter.post('/ticket', userinputvalidate, async (req, res, next) => {
         context: newticket.context,
         related: newticket.related,
         status: newticket.status,
-        createdAt:newticket.createdAt,
+        createdAt: newticket.createdAt,
       }
     })
   } catch (error) {
@@ -79,35 +80,68 @@ userrouter.post('/ticket', userinputvalidate, async (req, res, next) => {
   }
 })
 //?for cancelling a ticket 
-userrouter.patch('/ticket/:ticketId',async(req,res,next)=>{
+userrouter.patch('/ticket/:ticketId', async (req, res, next) => {
   try {
     const ticketId = req.params.ticketId
     const ticket = await ticketmodel.findById(ticketId)
-    if(!ticket){
+    if (!ticket) {
       return res.status(404).send({
-        success:false,
-        message:"Ticket not found"
+        success: false,
+        message: "Ticket not found"
       })
     }
-    if(ticket.raisedBy != req.user.userid){
+    if (ticket.raisedBy != req.user.userid) {
       return res.status(404).send({
-        success:false,
-        message:"Ticket not found" //lie
+        success: false,
+        message: "Ticket not found" //lie
       })
     }
-    if(ticket.status == "resolved" || ticket.status == "cancelled"){
+    if (ticket.status == "resolved" || ticket.status == "cancelled") {
       return res.status(400).send({
-        success:false,
-        message:"Bad request"
+        success: false,
+        message: "Bad request"
       })
     }
-    await ticketmodel.findByIdAndUpdate(ticketId,{"status":"cancelled"})
+    await ticketmodel.findByIdAndUpdate(ticketId, { "status": "cancelled" })
     res.send({
-      success:true,
-      message:"Cancelled the ticket"
+      success: true,
+      message: "Cancelled the ticket"
     })
   } catch (error) {
     next(error)
   }
+})
+//?commenting on ticket
+userrouter.post('/ticket/:ticketId', async (req, res, next) => {
+  const ticketId = req.params.ticketId
+  const { comment } = req.body
+  if (!comment) {
+    return res.status(400).send({
+      success: false,
+      message: "invalid input"
+    })
+  }
+  const ticket = await ticketmodel.findById(ticketId)
+  if (!ticket) {
+    return res.status(404).send({
+      success: false,
+      message: "ticket not found"
+    })
+  }
+  if (ticket.raisedBy != req.user.userid) {
+    return res.status(404).send({
+      success: false,
+      message: "ticket not found" //lie
+    })
+  }
+  const newcomment = new commentmodel({ ticket: ticketId, comment: comment, by: req.user.userid })
+  await newcomment.save()
+  ticket.comments.push(newcomment._id)
+  await ticket.save()
+  res.status(201).send({
+    success: true,
+    message: "posted new comment",
+    newcomment: newcomment
+  })
 })
 module.exports = userrouter

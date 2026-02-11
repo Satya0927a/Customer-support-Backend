@@ -6,7 +6,7 @@ const agentrouter = require('express').Router()
 //?to view what tickets are taken by the agent
 agentrouter.get('/ticket/assigned',async(req,res,next)=>{
   try {
-    const tickets = await ticketmodel.find({agentIncharge:req.user.userid,status:"processing"}).populate({path:'comments',select:"comment"})
+    const tickets = await ticketmodel.find({agentIncharge:req.user.userid,status:"processing"})
     if(tickets.length ==0){
       return res.send({
         success:true,
@@ -125,6 +125,32 @@ agentrouter.patch('/ticket/:ticketId', async (req, res, next) => {
   }
 })
 
+agentrouter.get('/ticket/assigned/:ticketId', async (req, res, next) => {
+  try {
+    const ticketId = req.params.ticketId
+    const ticket = await ticketmodel.findById(ticketId).populate({path:'comments',select:"comment"})
+    if (!ticket) {
+      return res.status(404).send({
+        success: false,
+        message: "Ticket not found"
+      })
+    }
+    if(ticket.agentIncharge != req.user.userid){
+      return res.status(404).send({
+        success:false,
+        message:"ticket not found" //lie
+      })
+    }
+    res.send({
+      success: true,
+      message: "fetched the ticket",
+      ticket: ticket
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+//? agent can comment on tickets
 agentrouter.post('/ticket/assigned/:ticketId',async(req,res,next)=>{
   try {
     const {comment} = req.body

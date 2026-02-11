@@ -3,7 +3,7 @@ const userinputvalidate = require('../middlewares/userinputvalidator')
 const usermodel = require('../models/usermodel')
 const adminrouter = require('express').Router()
 
-//?to create accounts
+//?to create role based accounts
 adminrouter.post('/register', userinputvalidate, async (req, res, next) => {
   try {
     const { name, email, password, role } = req.body
@@ -37,23 +37,36 @@ adminrouter.post('/register', userinputvalidate, async (req, res, next) => {
     next(error)
   }
 })
-//?to fetch accounts based no filters
-adminrouter.get('/user',async(req,res,next)=>{
+//?to fetch accounts based on filters
+adminrouter.get('/user', async (req, res, next) => {
   try {
-    const {role,email,name} = req.query
+    const { role, email, name } = req.query
     const filter = {}
-    if(role) filter.role = role
-    if(email) filter.email = email
-    if(name) filter.name = name
+    if (role) {
+      if(!['user','admin','agent'].includes(role)){
+        return res.status(400).send({
+          success:false,
+          message:"Invalid role value"
+        })
+      }
+      filter.role = role
+
+    }
+    if (email) filter.email = email
+    if (name) filter.name = {
+      $regex: `^${name}`,
+      $options:"i"
+    }
     const allusers = await usermodel.find(filter).select('-passwordHash -__v')
-    if(allusers.length == 0){
+    if (allusers.length == 0) {
       return res.status(404).send({
-        success:false,
-        message:"no user found"
+        success: false,
+        message: "no user found"
       })
     }
     res.send(allusers)
   } catch (error) {
+    next(error)
   }
 })
 module.exports = adminrouter

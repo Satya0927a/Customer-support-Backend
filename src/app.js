@@ -1,11 +1,11 @@
 const express = require('express')
 const mongoose = require('mongoose')
-const userrouter = require('./controllers/user_cnt');
 const errorhandler = require('./middlewares/errorhandler');
-const ticketrouter = require('./controllers/ticket_cnt');
 const authmiddleware = require('./middlewares/authmiddleware');
 const adminrouter = require('./controllers/admin_cnt');
 const adminmiddleware = require('./middlewares/adminmiddleware');
+const authrouter = require('./controllers/auth_cnt');
+const userrouter = require('./controllers/user_cnt');
 const app = express()
 
 if(mongoose.connect(process.env.MONGO_URI)){
@@ -18,8 +18,8 @@ app.use(express.json())
 app.get('/',(req,res)=>{
   res.send("welcome to the customer support backend")
 })
-app.use('/api/user',userrouter)
-app.use('/api/ticket',authmiddleware,ticketrouter)
+app.use('/api/auth',authrouter)
+app.use('/api/user',authmiddleware,userrouter)
 app.use('/api/admin',authmiddleware,adminmiddleware,adminrouter)
 app.use(errorhandler)
 

@@ -37,5 +37,23 @@ adminrouter.post('/register', userinputvalidate, async (req, res, next) => {
     next(error)
   }
 })
-
+//?to fetch accounts based no filters
+adminrouter.get('/user',async(req,res,next)=>{
+  try {
+    const {role,email,name} = req.query
+    const filter = {}
+    if(role) filter.role = role
+    if(email) filter.email = email
+    if(name) filter.name = name
+    const allusers = await usermodel.find(filter).select('-passwordHash -__v')
+    if(allusers.length == 0){
+      return res.status(404).send({
+        success:false,
+        message:"no user found"
+      })
+    }
+    res.send(allusers)
+  } catch (error) {
+  }
+})
 module.exports = adminrouter

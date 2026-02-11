@@ -1,10 +1,12 @@
+const commentmodel = require('../models/commentmodel')
 const ticketmodel = require('../models/ticketmodel')
 
 const agentrouter = require('express').Router()
 
+//?to view what tickets are taken by the agent
 agentrouter.get('/ticket/assigned',async(req,res,next)=>{
   try {
-    const tickets = await ticketmodel.find({agentIncharge:req.user.userid,status:"processing"})
+    const tickets = await ticketmodel.find({agentIncharge:req.user.userid,status:"processing"}).populate({path:'comments',select:"comment"})
     if(tickets.length ==0){
       return res.send({
         success:true,
@@ -117,6 +119,43 @@ agentrouter.patch('/ticket/:ticketId', async (req, res, next) => {
     res.send({
       success:true,
       message:"you have been given incharge of this ticket"
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
+agentrouter.post('/ticket/assigned/:ticketId',async(req,res,next)=>{
+  try {
+    const {comment} = req.body
+    if(!comment){
+      return res.status(400).send({
+        success:false,
+        message:"invalid input"
+      })
+    }
+    const ticketId = req.params.ticketId
+    const ticket = await ticketmodel.findById(ticketId)
+    if(!ticket){
+      return res.status(404).send({
+        success:false,
+        message:"ticket not found"
+      })
+    }
+    if(ticket.agentIncharge != req.user.userid){
+      return res.status(404).send({
+        success:false,
+        message:"ticket not found" //lie
+      })
+    }
+    const newcomment = new commentmodel({ticket:ticketId,comment:comment,by:req.user.userid})
+    await newcomment.save()
+    ticket.comments.push(newcomment._id)
+    await ticket.save()
+    res.status(201).send({
+      success:true,
+      message:"posted new comment",
+      newcomment:newcomment
     })
   } catch (error) {
     next(error)

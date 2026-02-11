@@ -27,7 +27,7 @@ userrouter.get('/ticket', async (req, res, next) => {
 userrouter.get('/ticket/:ticketid',async(req,res,next)=>{
   try {
     const ticketid = req.params.ticketid
-    let ticket = await ticketmodel.findById(ticketid).populate({path:"agentIncharge agentHistory",select:"name -_id"}).select('-__v')
+    let ticket = await ticketmodel.findById(ticketid).populate([{path:"agentIncharge agentHistory",select:"name -_id"},{path:"comments",select:"comment"}]).select('-__v')
     if(ticket.raisedBy != req.user.userid){
       return res.status(404).send({
         success:false,

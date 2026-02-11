@@ -14,9 +14,15 @@ const authmiddleware = async(req,res,next)=>{
     const payload = jwt.verify(token,process.env.SECRET)
     const usercheck = await usermodel.findById(payload.userid)
     if(!usercheck){
-      return res.status(404).send({
+      return res.status(401).send({
         success:false,
         message:"User not found"
+      })
+    }
+    if(!usercheck.active){
+      return res.status(401).send({
+        success:false,
+        message:"Your account is deactivated"
       })
     }
     req.user = {

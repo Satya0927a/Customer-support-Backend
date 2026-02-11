@@ -69,4 +69,39 @@ adminrouter.get('/user', async (req, res, next) => {
     next(error)
   }
 })
+//?deactivate or activate accounts
+adminrouter.patch('/user/:userId',async(req,res,next)=>{
+  try {
+    const userId = req.params.userId
+    const user = await usermodel.findById(userId)
+    if(!user){
+      return res.status(404).send({
+        success:false,
+        message:"User not found"
+      })
+    }
+    if(user.role == 'admin'){
+      return res.status(403).send({
+        success:false,
+        message:"cannot deactivate an admin account"
+      })
+    }
+    user.active = !user.active
+    await user.save()
+    if(user.active){
+      return res.send({
+        success:true,
+        message:"activated the account"
+      })
+    }
+    else{
+      return res.send({
+        success:true,
+        message:"deactivated the account"
+      })
+    }
+  } catch (error) {
+    next(error)
+  }
+})
 module.exports = adminrouter

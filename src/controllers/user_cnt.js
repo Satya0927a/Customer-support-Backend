@@ -128,6 +128,12 @@ userrouter.post('/ticket/:ticketId', async (req, res, next) => {
       message: "ticket not found"
     })
   }
+  if(ticket.status == "resolved"){
+     return res.status(404).send({
+      success: false,
+      message: "This ticket is closed"
+     })
+  }
   if (ticket.raisedBy != req.user.userid) {
     return res.status(404).send({
       success: false,

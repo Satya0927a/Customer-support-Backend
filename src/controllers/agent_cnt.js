@@ -83,7 +83,7 @@ agentrouter.get('/ticket/:ticketId', async (req, res, next) => {
   }
 })
 //?to take a ticket
-agentrouter.patch('/ticket/:ticketId', async (req, res, next) => {
+agentrouter.patch('/ticket/:ticketId/assign', async (req, res, next) => {
   try {
     const ticketId = req.params.ticketId
     const ticket = await ticketmodel.findById(ticketId)
@@ -157,7 +157,7 @@ agentrouter.get('/ticket/assigned/:ticketId', async (req, res, next) => {
   }
 })
 //? agent can comment on tickets
-agentrouter.post('/ticket/assigned/:ticketId', async (req, res, next) => {
+agentrouter.post('/ticket/assigned/:ticketId/comment', async (req, res, next) => {
   try {
     const { comment } = req.body
     if (!comment) {
@@ -200,7 +200,7 @@ agentrouter.post('/ticket/assigned/:ticketId', async (req, res, next) => {
   }
 })
 //?to resolve a ticket
-agentrouter.patch('/ticket/assigned/:ticketId', async (req, res, next) => {
+agentrouter.patch('/ticket/assigned/:ticketId/status', async (req, res, next) => {
   try {
     const ticketId = req.params.ticketId
     const ticket = await ticketmodel.findById(ticketId)

@@ -80,7 +80,7 @@ userrouter.post('/ticket', userinputvalidate, async (req, res, next) => {
   }
 })
 //?for cancelling a ticket 
-userrouter.patch('/ticket/:ticketId', async (req, res, next) => {
+userrouter.patch('/ticket/:ticketId/status', async (req, res, next) => {
   try {
     const ticketId = req.params.ticketId
     const ticket = await ticketmodel.findById(ticketId)
@@ -112,7 +112,7 @@ userrouter.patch('/ticket/:ticketId', async (req, res, next) => {
   }
 })
 //?commenting on ticket
-userrouter.post('/ticket/:ticketId', async (req, res, next) => {
+userrouter.post('/ticket/:ticketId/comment', async (req, res, next) => {
   const ticketId = req.params.ticketId
   const { comment } = req.body
   if (!comment) {
@@ -128,7 +128,7 @@ userrouter.post('/ticket/:ticketId', async (req, res, next) => {
       message: "ticket not found"
     })
   }
-  if(ticket.status == "resolved"){
+  if(ticket.status == "resolved" || ticket.status == "cancelled"){
      return res.status(404).send({
       success: false,
       message: "This ticket is closed"

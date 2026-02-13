@@ -5,15 +5,7 @@ const usermodel = require('../models/usermodel')
 
 const authrouter = require('express').Router()
 
-//!temp dev route
-authrouter.get('/all',async(req,res,next)=>{
-  try {
-    const alluser = await usermodel.find({})
-    res.send(alluser)
-  } catch (error) {
-    next(error)
-  }
-})
+
 authrouter.post('/register',userinputvalidate,async(req,res,next)=>{
   try {
     const {name,email,password} = req.body

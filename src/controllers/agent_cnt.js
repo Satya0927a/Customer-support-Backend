@@ -3,31 +3,16 @@ const ticketmodel = require('../models/ticketmodel')
 
 const agentrouter = require('express').Router()
 
-//?to view what tickets are taken by the agent
-agentrouter.get('/ticket/assigned', async (req, res, next) => {
-  try {
-    const tickets = await ticketmodel.find({ agentIncharge: req.user.userid, status: "processing" })
-    if (tickets.length == 0) {
-      return res.send({
-        success: true,
-        message: "You have no pending tickets assigned to you"
-      })
-    }
-    res.send({
-      success: true,
-      message: "fetched all the tickets",
-      tickets: tickets
-    })
-  } catch (error) {
-    next(error)
-  }
-})
+
 //?to get all the tickets available and filter through them
 agentrouter.get('/ticket', async (req, res, next) => {
   try {
-    const { by, related, status } = req.query
+    const { by, related, status, assigned } = req.query
     const filter = {}
     if (by) filter.raisedBy = by
+    if (assigned == "true") {
+      filter.agentIncharge = req.user.userid
+    }
     if (related) {
       if (!['payment', 'service', 'account', 'other'].includes(related)) {
         return res.status(400).send({
@@ -66,11 +51,18 @@ agentrouter.get('/ticket', async (req, res, next) => {
 agentrouter.get('/ticket/:ticketId', async (req, res, next) => {
   try {
     const ticketId = req.params.ticketId
-    const ticket = await ticketmodel.findById(ticketId)
+    const { assigned } = req.query
+    const ticket = await ticketmodel.findById(ticketId).populate([{ path: 'comments', select: 'comment by' }, { path: 'agentHistory', select: 'name' }, { path: 'raisedBy', select: 'name email' }])
     if (!ticket) {
       return res.status(404).send({
         success: false,
         message: "Ticket not found"
+      })
+    }
+    if (assigned == "true" && ticket.agentIncharge != req.user.userid) {
+      return res.status(404).send({
+        success: false,
+        message: "This ticket is not assigned to you"
       })
     }
     res.send({
@@ -131,33 +123,8 @@ agentrouter.patch('/ticket/:ticketId/assign', async (req, res, next) => {
   }
 })
 
-agentrouter.get('/ticket/assigned/:ticketId', async (req, res, next) => {
-  try {
-    const ticketId = req.params.ticketId
-    const ticket = await ticketmodel.findById(ticketId).populate({ path: 'comments', select: "comment" })
-    if (!ticket) {
-      return res.status(404).send({
-        success: false,
-        message: "Ticket not found"
-      })
-    }
-    if (ticket.agentIncharge != req.user.userid) {
-      return res.status(404).send({
-        success: false,
-        message: "ticket not found" //lie
-      })
-    }
-    res.send({
-      success: true,
-      message: "fetched the ticket",
-      ticket: ticket
-    })
-  } catch (error) {
-    next(error)
-  }
-})
 //? agent can comment on tickets
-agentrouter.post('/ticket/assigned/:ticketId/comment', async (req, res, next) => {
+agentrouter.post('/ticket/:ticketId/comment', async (req, res, next) => {
   try {
     const { comment } = req.body
     if (!comment) {
@@ -174,16 +141,16 @@ agentrouter.post('/ticket/assigned/:ticketId/comment', async (req, res, next) =>
         message: "ticket not found"
       })
     }
-    if (ticket.status == "resolved") {
-      return res.status(404).send({
+    if (ticket.status == "resolved" || ticket.status == "cancelled") {
+      return res.status(403).send({
         success: false,
-        message: "This ticket is closed"
+        message: `This ticket is ${ticket.status}`
       })
     }
     if (ticket.agentIncharge != req.user.userid) {
       return res.status(404).send({
         success: false,
-        message: "ticket not found" //lie
+        message: "You are not assigned to this ticket"
       })
     }
     const newcomment = new commentmodel({ ticket: ticketId, comment: comment, by: req.user.userid })
@@ -200,7 +167,7 @@ agentrouter.post('/ticket/assigned/:ticketId/comment', async (req, res, next) =>
   }
 })
 //?to resolve a ticket
-agentrouter.patch('/ticket/assigned/:ticketId/status', async (req, res, next) => {
+agentrouter.patch('/ticket/:ticketId/status', async (req, res, next) => {
   try {
     const ticketId = req.params.ticketId
     const ticket = await ticketmodel.findById(ticketId)
@@ -210,10 +177,16 @@ agentrouter.patch('/ticket/assigned/:ticketId/status', async (req, res, next) =>
         message: "ticket not found"
       })
     }
+    if (ticket.status == "resolved" || ticket.status == "cancelled") {
+      return res.status(403).send({
+        success: false,
+        message: `This ticket is ${ticket.status}`
+      })
+    }
     if (ticket.agentIncharge != req.user.userid) {
       return res.status(404).send({
         success: false,
-        message: "ticket not found" //lie
+        message: "This is ticket is not assigned to you"
       })
     }
     ticket.status = "resolved"

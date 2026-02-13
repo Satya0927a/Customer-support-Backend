@@ -70,7 +70,7 @@ adminrouter.get('/user', async (req, res, next) => {
   }
 })
 //?deactivate or activate accounts
-adminrouter.patch('/user/:userId',async(req,res,next)=>{
+adminrouter.patch('/user/:userId/active',async(req,res,next)=>{
   try {
     const userId = req.params.userId
     const user = await usermodel.findById(userId)

@@ -67,19 +67,17 @@ POST   /api/user/ticket/:ticketId/comment
 ```
 ### Agents
 ``` 
-GET    /api/agent/ticket
+GET    /api/agent/ticket {queries: ?status ?related ?by ?assigned=true}
 GET    /api/agent/ticket/:ticketId
-GET    /api/agent/ticket/assigned
-GET    /api/agent/ticket/assigned/:ticketId
 PATCH  /api/agent/ticket/:ticketId/assign
-PATCH  /api/agent/ticket/assigned:ticketId/status
+PATCH  /api/agent/ticket/:ticketId/status
 POST   /api/agent/ticket/:ticketId/comment
 ```
 ### Admin
 ``` 
 POST   /api/admin/register
-GET    /api/admin/user
+GET    /api/admin/user  {queries: ?name ?email ?role}
 GET    /api/admin/user/:userId
-PATCH  /api/admin/user/:userId
+PATCH  /api/admin/user/:userId/active {toggles active=true/false}
 ```
 

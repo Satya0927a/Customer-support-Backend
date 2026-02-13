@@ -8,6 +8,7 @@ const authrouter = require('./controllers/auth_cnt');
 const userrouter = require('./controllers/user_cnt');
 const agentmiddleware = require('./middlewares/agentmiddleware');
 const agentrouter = require('./controllers/agent_cnt');
+const usermiddleware = require('./middlewares/usermiddleware');
 const app = express()
 
 if(mongoose.connect(process.env.MONGO_URI)){
@@ -21,7 +22,7 @@ app.get('/',(req,res)=>{
   res.send("welcome to the customer support backend")
 })
 app.use('/api/auth',authrouter)
-app.use('/api/user',authmiddleware,userrouter)
+app.use('/api/user',authmiddleware,usermiddleware,userrouter)
 app.use('/api/admin',authmiddleware,adminmiddleware,adminrouter)
 app.use('/api/agent',authmiddleware,agentmiddleware,agentrouter)
 app.use(errorhandler)

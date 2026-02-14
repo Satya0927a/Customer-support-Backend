@@ -113,41 +113,84 @@ userrouter.patch('/ticket/:ticketId/status', async (req, res, next) => {
 })
 //?commenting on ticket
 userrouter.post('/ticket/:ticketId/comment', async (req, res, next) => {
-  const ticketId = req.params.ticketId
-  const { comment } = req.body
-  if (!comment) {
-    return res.status(400).send({
-      success: false,
-      message: "invalid input"
+  try {
+    const ticketId = req.params.ticketId
+    const { comment } = req.body
+    if (!comment) {
+      return res.status(400).send({
+        success: false,
+        message: "invalid input"
+      })
+    }
+    const ticket = await ticketmodel.findById(ticketId)
+    if (!ticket) {
+      return res.status(404).send({
+        success: false,
+        message: "ticket not found"
+      })
+    }
+    if (ticket.status == "resolved" || ticket.status == "cancelled") {
+      return res.status(404).send({
+        success: false,
+        message: "This ticket is closed"
+      })
+    }
+    if (ticket.raisedBy != req.user.userid) {
+      return res.status(404).send({
+        success: false,
+        message: "ticket not found" //lie
+      })
+    }
+    const newcomment = new commentmodel({ ticket: ticketId, comment: comment, by: req.user.userid })
+    await newcomment.save()
+    ticket.comments.push(newcomment._id)
+    await ticket.save()
+    res.status(201).send({
+      success: true,
+      message: "posted new comment",
+      newcomment: newcomment
     })
+  } catch (error) {
+    next(error)
   }
-  const ticket = await ticketmodel.findById(ticketId)
-  if (!ticket) {
-    return res.status(404).send({
-      success: false,
-      message: "ticket not found"
+})
+userrouter.patch('/ticket/:ticketId/rating', async (req, res, next) => {
+  try {
+    const { rating } = req.body
+    const ticketId = req.params.ticketId
+    if (![1, 2, 3, 4, 5].includes(rating)) {
+      return res.status(400).send({
+        success: false,
+        message: "rating should be a int number from 1 to 5"
+      })
+    }
+    const ticket = await ticketmodel.findById(ticketId)
+    if (!ticket || (ticket.raisedBy != req.user.userid)) {
+      return res.status(404).send({
+        success: false,
+        message: "Ticket not found"
+      })
+    }
+    if (ticket.status != "resolved") {
+      return res.status(403).send({
+        success: false,
+        message: "you cannot rate the ticket before it is resolved"
+      })
+    }
+    if (ticket.rating) {
+      return res.status(403).send({
+        success: false,
+        message: "The ticket is already rated"
+      })
+    }
+    ticket.rating = rating
+    await ticket.save()
+    res.send({
+      success:true,
+      message:"rated the ticket"
     })
+  } catch (error) {
+    next(error)
   }
-  if(ticket.status == "resolved" || ticket.status == "cancelled"){
-     return res.status(404).send({
-      success: false,
-      message: "This ticket is closed"
-     })
-  }
-  if (ticket.raisedBy != req.user.userid) {
-    return res.status(404).send({
-      success: false,
-      message: "ticket not found" //lie
-    })
-  }
-  const newcomment = new commentmodel({ ticket: ticketId, comment: comment, by: req.user.userid })
-  await newcomment.save()
-  ticket.comments.push(newcomment._id)
-  await ticket.save()
-  res.status(201).send({
-    success: true,
-    message: "posted new comment",
-    newcomment: newcomment
-  })
 })
 module.exports = userrouter

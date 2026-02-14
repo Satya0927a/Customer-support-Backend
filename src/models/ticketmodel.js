@@ -34,9 +34,9 @@ const tickeschema = new mongoose.Schema({
     type:mongoose.Schema.Types.ObjectId,
     ref:'user',
   }],
-  user_satisfaction:{
+  rating:{
     type:String,
-    enum:['high','mid','low'],
+    enum:[1,2,3,4,5],
   }
 
 },{timestamps:true})

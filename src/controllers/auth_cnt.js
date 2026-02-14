@@ -15,15 +15,15 @@ authrouter.post('/register',userinputvalidate,async(req,res,next)=>{
         message:"Invalid inputs"
       })
     }
-    const usercheck = await usermodel.findOne({email:email})
+    const usercheck = await usermodel.findOne({email:email.trim().toLowerCase()})
     if(usercheck){
       return res.status(403).send({
         success:false,
         message:"This email is already linked to an account"
       })
     }
-    const passhash = await bcrypt.hash(password,10)
-    const newuser = new usermodel({name:name,email:email,passwordHash:passhash})
+    const passhash = await bcrypt.hash(password.trim(),10)
+    const newuser = new usermodel({name:name,email:email.trim().toLowerCase(),passwordHash:passhash})
     await newuser.save()
     res.status(201).send({
       success:true,
@@ -47,7 +47,7 @@ authrouter.post('/login',userinputvalidate,async(req,res,next)=>{
       message:"Invalid inputs"
     })
   }
-  const user = await usermodel.findOne({email:email})
+  const user = await usermodel.findOne({email:email.trim().toLowerCase()})
   if(!user){
     return res.status(404).send({
       success:false,
@@ -60,7 +60,7 @@ authrouter.post('/login',userinputvalidate,async(req,res,next)=>{
       message:"Your account is deactive"
     })
   }
-  const passverify = await bcrypt.compare(password,user.passwordHash)
+  const passverify = await bcrypt.compare(password.trim(),user.passwordHash)
   if(!passverify){
     return res.status(404).send({
       success:false,

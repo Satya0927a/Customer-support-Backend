@@ -64,6 +64,7 @@ POST   /api/user/ticket
 GET    /api/user/ticket/:ticketId
 PATCH  /api/user/ticket/:ticketId/status
 POST   /api/user/ticket/:ticketId/comment
+PATCH  /api/user/ticket/:ticketId/rating
 ```
 ### Agents
 ``` 
